@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+SUPPORTED_EXTENSIONS = ('.py', '.sql', '.java', '.js', '.ts', '.jsx', '.tsx')
+
 class GitHubService:
     def __init__(self):
         self.g = Github(os.getenv("GITHUB_TOKEN"))
@@ -20,11 +22,24 @@ class GitHubService:
         latest = commits[0]
         changed_files = []
         for file in latest.files:
-            # 🚨 Added .java to ensure Spring Boot files are detected 🚨
-            if file.filename.endswith(('.py', '.sql', '.java')):
+            if file.filename.endswith(SUPPORTED_EXTENSIONS):
                 changed_files.append({
                     "filename": file.filename,
                     "status": file.status, # modified, added, removed
                     "patch": file.patch
                 })
         return changed_files
+
+    def fetch_all_code_files(self, ref="main"):
+        """Recursively fetches all supported code files from the repository tree."""
+        tree = self.repo.get_git_tree(ref, recursive=True)
+        code_files = []
+        
+        for element in tree.tree:
+            if element.type == "blob" and element.path.endswith(SUPPORTED_EXTENSIONS):
+                code_files.append({
+                    "path": element.path,
+                    "size": element.size
+                })
+                
+        return code_files
