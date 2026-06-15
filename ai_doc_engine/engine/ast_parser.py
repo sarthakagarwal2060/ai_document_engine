@@ -1,21 +1,14 @@
-import ast
+from .parsers.python_parser import PythonParser
+from .models import ParsedCodeUnit
+from typing import List
 
 class CodeParser:
     @staticmethod
-    def extract_elements(code_string):
-        """Extracts classes, functions, and their existing docstrings."""
-        tree = ast.parse(code_string)
-        elements = []
+    def parse_file(file_path: str, code_string: str) -> List[ParsedCodeUnit]:
+        """Routes to the correct language parser based on file extension."""
+        if file_path.endswith('.py'):
+            return PythonParser.parse(code_string, file_path)
+            
+        # Java and JS fallback parsers will be added here
         
-        for node in ast.walk(tree):
-            if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
-                docstring = ast.get_docstring(node)
-                # Reconstruct signature roughly
-                elements.append({
-                    "type": "class" if isinstance(node, ast.ClassDef) else "function",
-                    "name": node.name,
-                    "lineno": node.lineno,
-                    "docstring": docstring,
-                    "raw_code": ast.unparse(node) # Requires Python 3.9+
-                })
-        return elements
+        return []
