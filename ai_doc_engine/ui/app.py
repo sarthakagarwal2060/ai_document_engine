@@ -168,7 +168,12 @@ elif menu_selection == "💬 Chat with Docs":
         with st.chat_message("user"):
             st.markdown(prompt)
             
-        st.info("RAG search and LLM generation will be connected in Stages 4-6.")
+        with st.spinner("Searching knowledge base..."):
+            db_store = DocVectorStore()
+            docs, metadatas = db_store.search_with_citations(prompt)
+            context = "\n\n".join(docs) if docs else "No relevant documentation found."
+            
+        st.info("LLM generation will be connected in Stage 6.")
     
 elif menu_selection == "⚙️ Settings":
     st.subheader("Repository Settings")
