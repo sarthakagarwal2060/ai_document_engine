@@ -162,7 +162,13 @@ elif menu_selection == "💬 Chat with Docs":
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
             
-    st.info("Chat input will be implemented in Stage 3.")
+    prompt = st.chat_input("Ask a question about your code...")
+    if prompt:
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        with st.chat_message("user"):
+            st.markdown(prompt)
+            
+        st.info("RAG search and LLM generation will be connected in Stages 4-6.")
     
 elif menu_selection == "⚙️ Settings":
     st.subheader("Repository Settings")
