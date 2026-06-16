@@ -152,7 +152,13 @@ if menu_selection == "🔔 Pending Updates":
     
 elif menu_selection == "💬 Chat with Docs":
     st.subheader("Chat with your Codebase")
-    st.info("Chat UI will be implemented in Issue 5.")
+    
+    if "messages" not in st.session_state:
+        st.session_state.messages = [
+            {"role": "assistant", "content": "Hello! I am your AI Document Engine. Ask me anything about your codebase!"}
+        ]
+        
+    st.info("Chat layout will be implemented in Stage 2.")
     
 elif menu_selection == "⚙️ Settings":
     st.subheader("Repository Settings")
