@@ -158,7 +158,11 @@ elif menu_selection == "💬 Chat with Docs":
             {"role": "assistant", "content": "Hello! I am your AI Document Engine. Ask me anything about your codebase!"}
         ]
         
-    st.info("Chat layout will be implemented in Stage 2.")
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+            
+    st.info("Chat input will be implemented in Stage 3.")
     
 elif menu_selection == "⚙️ Settings":
     st.subheader("Repository Settings")
