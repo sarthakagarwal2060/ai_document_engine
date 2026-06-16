@@ -59,9 +59,30 @@ menu_selection = st.sidebar.radio(
     ["🔔 Pending Updates", "💬 Chat with Docs", "⚙️ Settings"]
 )
 
+UPDATES_FILE = "/app/chroma_db/pending_updates.json"
+
+def load_pending_updates():
+    if os.path.exists(UPDATES_FILE):
+        with open(UPDATES_FILE, "r") as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                return []
+    return []
+
 if menu_selection == "🔔 Pending Updates":
     st.subheader("Pending Documentation Updates")
-    st.info("The dashboard will be implemented in Stage 2.")
+    
+    updates = load_pending_updates()
+    
+    if not updates:
+        st.success("🎉 All caught up! No pending documentation updates.")
+    else:
+        st.warning(f"⚠️ You have {len(updates)} code units requiring documentation review.")
+        
+        for i, update in enumerate(updates):
+            with st.expander(f"📄 {update.get('filename')} ➡️ {update.get('unit_name')} [{update.get('severity')}]"):
+                st.info("Side-by-side diff viewer will be implemented in Stage 3.")
     
 elif menu_selection == "💬 Chat with Docs":
     st.subheader("Chat with your Codebase")
