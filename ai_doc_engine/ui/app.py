@@ -82,7 +82,26 @@ if menu_selection == "🔔 Pending Updates":
         
         for i, update in enumerate(updates):
             with st.expander(f"📄 {update.get('filename')} ➡️ {update.get('unit_name')} [{update.get('severity')}]"):
-                st.info("Side-by-side diff viewer will be implemented in Stage 3.")
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown('<h3 style="color:#ff4b4b;">🛑 Old Documentation</h3>', unsafe_allow_html=True)
+                    old_doc = update.get('old_doc')
+                    if old_doc:
+                        st.info(old_doc)
+                    else:
+                        st.warning("No previous documentation existed for this unit.")
+                        
+                with col2:
+                    st.markdown('<h3 style="color:#09ab3b;">✅ AI Drafted Documentation</h3>', unsafe_allow_html=True)
+                    new_doc = update.get('new_doc_draft')
+                    if new_doc:
+                        st.success(new_doc)
+                    else:
+                        st.error("No draft generated.")
+                        
+                st.write("---")
+                st.info("Approval buttons will be implemented in Stage 4.")
     
 elif menu_selection == "💬 Chat with Docs":
     st.subheader("Chat with your Codebase")
