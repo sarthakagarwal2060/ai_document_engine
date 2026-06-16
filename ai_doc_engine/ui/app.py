@@ -1,6 +1,30 @@
 import streamlit as st
 import os
 import json
+from engine.rag_store import DocVectorStore
+
+UPDATES_FILE = "/app/chroma_db/pending_updates.json"
+
+def load_pending_updates():
+    if os.path.exists(UPDATES_FILE):
+        with open(UPDATES_FILE, "r") as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                return []
+    return []
+
+def remove_pending_update(index):
+    updates = load_pending_updates()
+    if 0 <= index < len(updates):
+        updates.pop(index)
+        with open(UPDATES_FILE, "w") as f:
+            json.dump(updates, f)
+
+def approve_update(index, doc_id, text, metadata):
+    db = DocVectorStore()
+    db.upsert_doc(doc_id=doc_id, text=text, metadata=metadata)
+    remove_pending_update(index)
 
 # Stage 1: Base Layout & Premium Styling
 st.set_page_config(
@@ -101,7 +125,27 @@ if menu_selection == "🔔 Pending Updates":
                         st.error("No draft generated.")
                         
                 st.write("---")
-                st.info("Approval buttons will be implemented in Stage 4.")
+                
+                col_btn1, col_btn2 = st.columns([1, 1])
+                
+                doc_id = f"{update.get('filename')}::{update.get('unit_name')}"
+                metadata = {
+                    "unit_type": "function", # Default
+                    "name": update.get('unit_name'),
+                    "file_path": update.get('filename')
+                }
+                
+                with col_btn1:
+                    if st.button("✅ Approve Draft", key=f"approve_{i}"):
+                        approve_update(i, doc_id, new_doc, metadata)
+                        st.success("Draft approved and saved to database!")
+                        st.rerun()
+                        
+                with col_btn2:
+                    if st.button("❌ Reject", key=f"reject_{i}"):
+                        remove_pending_update(i)
+                        st.warning("Draft rejected.")
+                        st.rerun()
     
 elif menu_selection == "💬 Chat with Docs":
     st.subheader("Chat with your Codebase")
