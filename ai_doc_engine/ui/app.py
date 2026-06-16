@@ -2,6 +2,9 @@ import streamlit as st
 import os
 import json
 from engine.rag_store import DocVectorStore
+from engine.doc_generator import DocGenerator
+from engine.github_service import GitHubService
+from engine.llm_service import LLMService
 
 UPDATES_FILE = "/app/chroma_db/pending_updates.json"
 
@@ -153,4 +156,22 @@ elif menu_selection == "💬 Chat with Docs":
     
 elif menu_selection == "⚙️ Settings":
     st.subheader("Repository Settings")
-    st.info("Settings will be implemented in Stage 5.")
+    st.markdown("Use this panel to manage your Documentation Engine's global state.")
+    
+    st.write("---")
+    st.markdown("### 🔄 Full Manual Ingestion")
+    st.warning("Running a full ingestion will scan your entire repository and overwrite existing documentation.")
+    
+    if st.button("🚀 Run Full Repository Ingestion"):
+        with st.spinner("Fetching files, parsing code, and generating documentation. This may take several minutes..."):
+            try:
+                git_service = GitHubService()
+                llm_service = LLMService()
+                db_store = DocVectorStore()
+                
+                generator = DocGenerator(llm_service, db_store)
+                generator.generate_for_repo(git_service)
+                
+                st.success("✅ Full repository successfully ingested and documented!")
+            except Exception as e:
+                st.error(f"❌ An error occurred during ingestion: {str(e)}")
