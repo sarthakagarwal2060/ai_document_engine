@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import uvicorn
 import json
 import os
@@ -51,6 +52,58 @@ async def api_chat(query: ChatQuery):
         llm = LLMService()
     response = llm.chat_with_context(query.prompt, query.context)
     return {"response": response}
+
+@app.post("/api/search_citations")
+async def api_search_citations(query: SearchQuery):
+    global db
+    if db is None:
+        from engine.rag_store import DocVectorStore
+        db = DocVectorStore()
+    docs, metas = db.search_with_citations(query.query, query.n_results)
+    return {"docs": docs, "metas": metas}
+
+@app.post("/api/upsert")
+async def api_upsert(doc: UpsertDoc):
+    global db
+    if db is None:
+        from engine.rag_store import DocVectorStore
+        db = DocVectorStore()
+    db.upsert_doc(doc.doc_id, doc.text, doc.metadata)
+    return {"status": "success"}
+
+# Global flag to track background ingestion status
+is_ingesting = False
+
+@app.post("/api/ingest_repo")
+async def api_ingest_repo(background_tasks: BackgroundTasks):
+    global generator, is_ingesting
+    
+    if is_ingesting:
+        return {"status": "Already ingesting"}
+        
+    if generator is None:
+        from engine.rag_store import DocVectorStore
+        from engine.llm_service import LLMService
+        from engine.doc_generator import DocGenerator
+        db_store = DocVectorStore()
+        llm_service = LLMService()
+        generator = DocGenerator(llm_service=llm_service, db_store=db_store)
+    
+    def wrapped_ingest():
+        global is_ingesting
+        is_ingesting = True
+        try:
+            generator.generate_for_repo(git_service)
+        finally:
+            is_ingesting = False
+
+    background_tasks.add_task(wrapped_ingest)
+    return {"status": "Ingestion started in background"}
+
+@app.get("/api/ingestion_status")
+async def api_ingestion_status():
+    global is_ingesting
+    return {"is_ingesting": is_ingesting}
 
 @app.get("/api/pending_updates")
 async def get_pending_updates():

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Rocket } from 'lucide-react';
 
@@ -8,6 +8,41 @@ function Settings() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState(null);
 
+  useEffect(() => {
+    // We use a functional approach to avoid stale closures with setInterval
+    const interval = setInterval(async () => {
+      try {
+        const res = await axios.get(`${API_URL}/ingestion_status`);
+        const isIngesting = res.data.is_ingesting;
+        
+        setLoading((currentLoading) => {
+          if (isIngesting) {
+            setMessage({ type: 'warning', text: "⏳ Ingestion is currently running in the background..." });
+            return true;
+          } else {
+            // If it WAS loading, but now it's not, we just finished!
+            if (currentLoading) {
+              setMessage({ type: 'success', text: "✅ Ingestion complete!" });
+            }
+            return false;
+          }
+        });
+      } catch (err) {
+        console.error("Status check failed", err);
+      }
+    }, 3000);
+    
+    // Initial check
+    axios.get(`${API_URL}/ingestion_status`).then(res => {
+      if (res.data.is_ingesting) {
+        setLoading(true);
+        setMessage({ type: 'warning', text: "⏳ Ingestion is currently running in the background..." });
+      }
+    });
+
+    return () => clearInterval(interval);
+  }, []);
+
   const handleIngest = async () => {
     if (!window.confirm("Running a full ingestion will scan your entire repository and overwrite existing documentation. Continue?")) {
       return;
@@ -15,16 +50,11 @@ function Settings() {
 
     try {
       setLoading(true);
-      setMessage(null);
-      const res = await axios.post(`${API_URL}/ingest_repo`);
-      
-      if (res.status === 200) {
-        setMessage({ type: 'success', text: "✅ Full repository ingestion task has been started in the background! Check backend logs for progress." });
-      }
+      setMessage({ type: 'warning', text: "⏳ Starting ingestion..." });
+      await axios.post(`${API_URL}/ingest_repo`);
     } catch (err) {
       console.error(err);
       setMessage({ type: 'error', text: "❌ Failed to start ingestion task on internal API." });
-    } finally {
       setLoading(false);
     }
   };
@@ -50,11 +80,11 @@ function Settings() {
             disabled={loading}
           >
             <Rocket size={18} />
-            {loading ? 'Starting Ingestion...' : 'Run Full Repository Ingestion'}
+            {loading ? 'Ingestion in Progress...' : 'Run Full Repository Ingestion'}
           </button>
 
           {message && (
-            <div style={{ marginTop: '1.5rem', color: message.type === 'error' ? 'var(--danger)' : 'var(--success)' }}>
+            <div style={{ marginTop: '1.5rem', color: message.type === 'error' ? 'var(--danger)' : message.type === 'warning' ? 'var(--warning)' : 'var(--success)' }}>
               {message.text}
             </div>
           )}

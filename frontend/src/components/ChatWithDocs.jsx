@@ -24,11 +24,14 @@ function ChatWithDocs() {
       // 1. Search Vector Database
       const searchRes = await axios.post(`${API_URL}/search_citations`, {
         query: input,
-        n_results: 10
+        n_results: 3
       });
       
       const { docs, metas } = searchRes.data;
-      const context = docs && docs.length > 0 ? docs.join("\n\n") : "No relevant documentation found.";
+      
+      const context = docs && docs.length > 0 
+        ? docs.map((doc, i) => `File: ${metas[i].file_path}\nFunction/Class: ${metas[i].name}\n\n${doc}`).join("\n\n---\n\n") 
+        : "No relevant documentation found.";
 
       // We cannot securely call Groq directly from the frontend without exposing the API key!
       // In a real Vercel app, we would make a backend endpoint for chat.
