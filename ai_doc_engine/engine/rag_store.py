@@ -31,7 +31,7 @@ class DocVectorStore:
         )
         return results['documents'][0] if results['documents'] else []
 
-    def search_with_citations(self, query, n_results=3):
+    def search_with_citations(self, query, n_results=10):
         """Retrieve relevant documentation chunks AND their metadata for citations."""
         results = self.collection.query(
             query_texts=[query],

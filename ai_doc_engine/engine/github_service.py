@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-SUPPORTED_EXTENSIONS = ('.py', '.sql', '.java', '.js', '.ts', '.jsx', '.tsx')
+SUPPORTED_EXTENSIONS = ('.py', '.sql', '.java', '.js', '.ts', '.jsx', '.tsx', '.md')
 
 class GitHubService:
     def __init__(self):

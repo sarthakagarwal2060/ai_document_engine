@@ -1,5 +1,5 @@
 import os
-from engine.parsers import get_parser
+from engine.ast_parser import CodeParser
 from engine.models import ParsedCodeUnit
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -44,14 +44,9 @@ class DocGenerator:
             print(f"📄 Parsing file: {path}", flush=True)
             
             content = git_service.get_file_content(path, ref=ref)
-            parser = get_parser(path)
             
-            if not parser:
-                print(f"⏩ Skipping {path} (Unsupported language)")
-                continue
-                
             try:
-                units = parser.parse(content, path)
+                units = CodeParser.parse_file(path, content)
                 if not units:
                     tasks.append(('file', content, path))
                 else:
