@@ -1,6 +1,8 @@
 import streamlit as st
 import os
+import sys
 import json
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from engine.rag_store import DocVectorStore
 from engine.doc_generator import DocGenerator
 from engine.github_service import GitHubService
@@ -82,8 +84,9 @@ st.markdown('<p class="premium-subtitle">Your self-updating codebase knowledge g
 # Sidebar Navigation
 st.sidebar.title("Navigation")
 menu_selection = st.sidebar.radio(
-    "",
-    ["🔔 Pending Updates", "💬 Chat with Docs", "⚙️ Settings"]
+    "Navigation Menu",
+    ["🔔 Pending Updates", "💬 Chat with Docs", "⚙️ Settings"],
+    label_visibility="collapsed"
 )
 
 UPDATES_FILE = "/app/chroma_db/pending_updates.json"

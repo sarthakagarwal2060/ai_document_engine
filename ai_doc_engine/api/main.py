@@ -2,9 +2,13 @@ from fastapi import FastAPI, Request, BackgroundTasks
 import uvicorn
 import json
 import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from engine.github_service import GitHubService
 from engine.llm_service import LLMService
 from engine.rag_store import DocVectorStore
+from engine.change_detector import ChangeDetector
+from engine.staleness_classifier import StalenessClassifier
 
 app = FastAPI(title="AI Doc Engine API")
 git_service = GitHubService()
@@ -28,42 +32,27 @@ def process_webhook_commit():
         pending_updates = []
 
     for change in changes:
-        filename = change["filename"]
-        patch = change["patch"]
-        print(f"📄 Checking file: {filename}", flush=True)
+        # We now use the dedicated ChangeDetector instead of messy inline logic
+        detector = ChangeDetector(git_service, db)
+        classifier = StalenessClassifier(llm_service)
         
-        try:
-            result = db.collection.get(ids=[filename])
-            old_doc = result['documents'][0] if result['documents'] else None
-        except Exception:
-            old_doc = None
+        changed_units = detector.detect_changed_units(changes)
         
-        if not old_doc:
-            print(f"⚠️ {filename} was not found in the Vector Database. Skipping.", flush=True)
-            continue
+        for unit in changed_units:
+            flag = classifier.classify(unit)
             
-        if patch:
-            print(f"🧠 Sending {filename} to Llama 3.3 for staleness check...", flush=True)
-            analysis = llm_service.detect_staleness_and_draft(old_doc, patch)
-            
-            severity = "REVIEW_RECOMMENDED"
-            updated_doc = analysis 
-            
-            if "SEVERITY:" in analysis and "UPDATED_DOC:" in analysis:
-                parts = analysis.split("UPDATED_DOC:")
-                severity = parts[0].replace("SEVERITY:", "").strip()
-                updated_doc = parts[1].strip()
-            
-            print(f"🤖 AI Verdict for {filename}: {severity}", flush=True)
-            
-            if "SAFE" not in severity.upper():
+            if flag.draft_markdown:
                 pending_updates.append({
-                    "filename": filename,
-                    "severity": severity,
-                    "old_doc": old_doc,
-                    "new_doc_draft": updated_doc
+                    "filename": flag.file_path,
+                    "unit_name": flag.unit_name,
+                    "severity": flag.severity,
+                    "old_doc": unit.old_doc,
+                    "new_doc_draft": flag.draft_markdown
                 })
-                print(f"✅ Added {filename} to UI Review Queue.", flush=True)
+                print(f"✅ Added {flag.unit_name} to UI Review Queue.", flush=True)
+                
+        # Break early because the ChangeDetector handles the entire diff list at once
+        break
     
     with open(UPDATES_FILE, "w") as f:
         json.dump(pending_updates, f)

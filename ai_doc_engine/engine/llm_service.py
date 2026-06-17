@@ -9,14 +9,33 @@ class LLMService:
         self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         self.model = "llama-3.3-70b-versatile" # Updated to actively supported Llama 3
 
-    def generate_documentation(self, code_snippet):
-        prompt = f"""
-        You are an expert technical writer. Generate comprehensive Markdown documentation for the following code.
-        Include: Purpose, Parameters, Return values, Side effects, Usage examples, and Edge cases.
-        
-        CODE:
-        {code_snippet}
-        """
+    def generate_documentation(self, unit):
+        if isinstance(unit, str):
+            code_snippet = unit
+            prompt = f"""
+            You are an expert technical writer. Generate comprehensive Markdown documentation for the following code.
+            Include: Purpose, Parameters, Return values, Side effects, Usage examples, and Edge cases.
+            
+            CODE:
+            {code_snippet}
+            """
+        else:
+            prompt = f"""
+            You are an expert technical writer. Generate comprehensive Markdown documentation for this specific code unit.
+            
+            Name: {unit.name}
+            Type: {unit.unit_type}
+            Return Type: {unit.return_type or 'None'}
+            Parameters: {unit.parameters}
+            Existing Docstring: {unit.docstring or 'None'}
+            
+            CODE:
+            {unit.raw_code}
+            
+            Please output a professional Markdown documentation block including: 
+            Purpose, Detailed Parameters, Return values, and Usage examples.
+            """
+            
         response = self.client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
             model=self.model,
