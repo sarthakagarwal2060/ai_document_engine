@@ -5,19 +5,32 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from engine.github_service import GitHubService
-from engine.llm_service import LLMService
-from engine.rag_store import DocVectorStore
 from engine.change_detector import ChangeDetector
 from engine.staleness_classifier import StalenessClassifier
 
+# We lazily initialize these to prevent loading two copies of PyTorch into memory 
+# at startup (one for Streamlit, one for FastAPI) to stay under the 512MB Render limit.
+db = None
+llm = None
+generator = None
+
 app = FastAPI(title="AI Doc Engine API")
 git_service = GitHubService()
-llm_service = LLMService()
-db = DocVectorStore()
 
 UPDATES_FILE = "pending_updates.json"
 
 def process_webhook_commit():
+    global db, llm, generator
+    if db is None:
+        from engine.rag_store import DocVectorStore
+        from engine.llm_service import LLMService
+        from engine.doc_generator import DocGenerator
+        db = DocVectorStore()
+        llm_service = LLMService()
+        generator = DocGenerator(llm_service=llm_service, db_store=db)
+    else:
+        llm_service = llm
+
     print("🔍 BACKGROUND TASK STARTED: Fetching latest commit...", flush=True)
     changes = git_service.get_latest_commit_diffs()
     print(f"📦 Found {len(changes)} changed files in the latest commit.", flush=True)
