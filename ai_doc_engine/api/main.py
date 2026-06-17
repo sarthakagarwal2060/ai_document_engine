@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request, BackgroundTasks
+from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import json
 import os
@@ -15,9 +16,68 @@ llm = None
 generator = None
 
 app = FastAPI(title="AI Doc Engine API")
+
+# Allow React frontend to connect during local development
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # Allow all origins for simplicity in local dev + Render proxy
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 git_service = GitHubService()
 
 UPDATES_FILE = "pending_updates.json"
+
+class SearchQuery(BaseModel):
+    query: str
+    n_results: int = 3
+
+class ChatQuery(BaseModel):
+    prompt: str
+    context: str
+
+class UpsertDoc(BaseModel):
+    doc_id: str
+    text: str
+    metadata: dict
+
+@app.post("/api/chat")
+async def api_chat(query: ChatQuery):
+    global llm
+    if llm is None:
+        from engine.llm_service import LLMService
+        llm = LLMService()
+    response = llm.chat_with_context(query.prompt, query.context)
+    return {"response": response}
+
+@app.get("/api/pending_updates")
+async def get_pending_updates():
+    if os.path.exists(UPDATES_FILE):
+        with open(UPDATES_FILE, "r") as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                return []
+    return []
+
+@app.delete("/api/pending_updates/{index}")
+async def delete_pending_update(index: int):
+    updates = []
+    if os.path.exists(UPDATES_FILE):
+        with open(UPDATES_FILE, "r") as f:
+            try:
+                updates = json.load(f)
+            except json.JSONDecodeError:
+                pass
+                
+    if 0 <= index < len(updates):
+        updates.pop(index)
+        with open(UPDATES_FILE, "w") as f:
+            json.dump(updates, f)
+        return {"status": "success", "message": "Update removed"}
+    return {"status": "error", "message": "Invalid index"}
 
 def process_webhook_commit():
     global db, llm, generator
@@ -82,60 +142,6 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
     else:
         print("ℹ️ Webhook received, but it wasn't a code push (commits array missing).", flush=True)
     return {"status": "Webhook received"}
-
-from pydantic import BaseModel
-class SearchQuery(BaseModel):
-    query: str
-    n_results: int = 3
-
-class UpsertDoc(BaseModel):
-    doc_id: str
-    text: str
-    metadata: dict
-
-@app.post("/api/search")
-async def api_search(query: SearchQuery):
-    global db
-    if db is None:
-        from engine.rag_store import DocVectorStore
-        db = DocVectorStore()
-    return {"result": db.search(query.query, query.n_results)}
-
-@app.post("/api/search_citations")
-async def api_search_citations(query: SearchQuery):
-    global db
-    if db is None:
-        from engine.rag_store import DocVectorStore
-        db = DocVectorStore()
-    docs, metas = db.search_with_citations(query.query, query.n_results)
-    return {"docs": docs, "metas": metas}
-
-@app.post("/api/upsert")
-async def api_upsert(doc: UpsertDoc):
-    global db
-    if db is None:
-        from engine.rag_store import DocVectorStore
-        db = DocVectorStore()
-    db.upsert_doc(doc.doc_id, doc.text, doc.metadata)
-    return {"status": "success"}
-
-@app.post("/api/ingest_repo")
-async def api_ingest_repo(background_tasks: BackgroundTasks):
-    def run_full_ingestion():
-        global db, llm, generator
-        if db is None:
-            from engine.rag_store import DocVectorStore
-            from engine.llm_service import LLMService
-            from engine.doc_generator import DocGenerator
-            db = DocVectorStore()
-            llm_service = LLMService()
-            generator = DocGenerator(llm_service=llm_service, db_store=db)
-        print("🚀 Starting Full Manual Ingestion...", flush=True)
-        generator.generate_for_repo(git_service)
-        print("✅ Full Ingestion Complete!", flush=True)
-        
-    background_tasks.add_task(run_full_ingestion)
-    return {"status": "started"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
