@@ -58,7 +58,7 @@ class DocGenerator:
         print(f"⚡ Queued {len(tasks)} code units. Firing parallel LLM requests...", flush=True)
         
         # Phase 2: Execute LLM calls concurrently
-        with ThreadPoolExecutor(max_workers=6) as executor:
+        with ThreadPoolExecutor(max_workers=2) as executor:
             futures = []
             for task_type, payload, path in tasks:
                 if task_type == 'file':

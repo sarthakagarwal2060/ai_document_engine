@@ -8,7 +8,7 @@ from engine.doc_generator import DocGenerator
 from engine.github_service import GitHubService
 from engine.llm_service import LLMService
 
-UPDATES_FILE = "/app/chroma_db/pending_updates.json"
+UPDATES_FILE = "pending_updates.json"
 
 def load_pending_updates():
     if os.path.exists(UPDATES_FILE):
@@ -89,7 +89,7 @@ menu_selection = st.sidebar.radio(
     label_visibility="collapsed"
 )
 
-UPDATES_FILE = "/app/chroma_db/pending_updates.json"
+UPDATES_FILE = "pending_updates.json"
 
 def load_pending_updates():
     if os.path.exists(UPDATES_FILE):

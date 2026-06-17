@@ -15,7 +15,7 @@ git_service = GitHubService()
 llm_service = LLMService()
 db = DocVectorStore()
 
-UPDATES_FILE = "/app/chroma_db/pending_updates.json"
+UPDATES_FILE = "pending_updates.json"
 
 def process_webhook_commit():
     print("🔍 BACKGROUND TASK STARTED: Fetching latest commit...", flush=True)
