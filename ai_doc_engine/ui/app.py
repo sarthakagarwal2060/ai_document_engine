@@ -179,7 +179,14 @@ elif menu_selection == "💬 Chat with Docs":
             
         with st.chat_message("assistant"):
             st.markdown(response)
-            st.info("Citations will be implemented in Stage 7.")
+            
+            if metadatas:
+                st.markdown("---")
+                st.markdown("**📚 Sources:**")
+                for meta in metadatas:
+                    file_path = meta.get("file_path", "Unknown File")
+                    unit_name = meta.get("name", "Unnamed Unit")
+                    st.caption(f"🔹 `{file_path}` ➡️ `{unit_name}`")
             
         st.session_state.messages.append({"role": "assistant", "content": response})
     
