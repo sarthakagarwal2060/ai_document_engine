@@ -83,5 +83,59 @@ async def github_webhook(request: Request, background_tasks: BackgroundTasks):
         print("ℹ️ Webhook received, but it wasn't a code push (commits array missing).", flush=True)
     return {"status": "Webhook received"}
 
+from pydantic import BaseModel
+class SearchQuery(BaseModel):
+    query: str
+    n_results: int = 3
+
+class UpsertDoc(BaseModel):
+    doc_id: str
+    text: str
+    metadata: dict
+
+@app.post("/api/search")
+async def api_search(query: SearchQuery):
+    global db
+    if db is None:
+        from engine.rag_store import DocVectorStore
+        db = DocVectorStore()
+    return {"result": db.search(query.query, query.n_results)}
+
+@app.post("/api/search_citations")
+async def api_search_citations(query: SearchQuery):
+    global db
+    if db is None:
+        from engine.rag_store import DocVectorStore
+        db = DocVectorStore()
+    docs, metas = db.search_with_citations(query.query, query.n_results)
+    return {"docs": docs, "metas": metas}
+
+@app.post("/api/upsert")
+async def api_upsert(doc: UpsertDoc):
+    global db
+    if db is None:
+        from engine.rag_store import DocVectorStore
+        db = DocVectorStore()
+    db.upsert_doc(doc.doc_id, doc.text, doc.metadata)
+    return {"status": "success"}
+
+@app.post("/api/ingest_repo")
+async def api_ingest_repo(background_tasks: BackgroundTasks):
+    def run_full_ingestion():
+        global db, llm, generator
+        if db is None:
+            from engine.rag_store import DocVectorStore
+            from engine.llm_service import LLMService
+            from engine.doc_generator import DocGenerator
+            db = DocVectorStore()
+            llm_service = LLMService()
+            generator = DocGenerator(llm_service=llm_service, db_store=db)
+        print("🚀 Starting Full Manual Ingestion...", flush=True)
+        generator.generate_for_repo(git_service)
+        print("✅ Full Ingestion Complete!", flush=True)
+        
+    background_tasks.add_task(run_full_ingestion)
+    return {"status": "started"}
+
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

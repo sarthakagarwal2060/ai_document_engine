@@ -2,13 +2,13 @@ import streamlit as st
 import os
 import sys
 import json
+import requests
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from engine.rag_store import DocVectorStore
-from engine.doc_generator import DocGenerator
-from engine.github_service import GitHubService
 from engine.llm_service import LLMService
 
 UPDATES_FILE = "pending_updates.json"
+
+API_BASE = "http://127.0.0.1:8000/api"
 
 def load_pending_updates():
     if os.path.exists(UPDATES_FILE):
@@ -27,8 +27,14 @@ def remove_pending_update(index):
             json.dump(updates, f)
 
 def approve_update(index, doc_id, text, metadata):
-    db = DocVectorStore()
-    db.upsert_doc(doc_id=doc_id, text=text, metadata=metadata)
+    try:
+        requests.post(f"{API_BASE}/upsert", json={
+            "doc_id": doc_id,
+            "text": text,
+            "metadata": metadata
+        })
+    except Exception as e:
+        st.error(f"Failed to communicate with internal API: {e}")
     remove_pending_update(index)
 
 # Stage 1: Base Layout & Premium Styling
@@ -88,17 +94,6 @@ menu_selection = st.sidebar.radio(
     ["🔔 Pending Updates", "💬 Chat with Docs", "⚙️ Settings"],
     label_visibility="collapsed"
 )
-
-UPDATES_FILE = "pending_updates.json"
-
-def load_pending_updates():
-    if os.path.exists(UPDATES_FILE):
-        with open(UPDATES_FILE, "r") as f:
-            try:
-                return json.load(f)
-            except json.JSONDecodeError:
-                return []
-    return []
 
 if menu_selection == "🔔 Pending Updates":
     st.subheader("Pending Documentation Updates")
@@ -172,8 +167,17 @@ elif menu_selection == "💬 Chat with Docs":
             st.markdown(prompt)
             
         with st.spinner("Searching knowledge base..."):
-            db_store = DocVectorStore()
-            docs, metadatas = db_store.search_with_citations(prompt)
+            docs = []
+            metadatas = []
+            try:
+                res = requests.post(f"{API_BASE}/search_citations", json={"query": prompt, "n_results": 10})
+                if res.status_code == 200:
+                    data = res.json()
+                    docs = data.get("docs", [])
+                    metadatas = data.get("metas", [])
+            except Exception as e:
+                st.error(f"Vector search failed: {e}")
+                
             context = "\n\n".join(docs) if docs else "No relevant documentation found."
             
         with st.spinner("Generating answer..."):
@@ -202,15 +206,12 @@ elif menu_selection == "⚙️ Settings":
     st.warning("Running a full ingestion will scan your entire repository and overwrite existing documentation.")
     
     if st.button("🚀 Run Full Repository Ingestion"):
-        with st.spinner("Fetching files, parsing code, and generating documentation. This may take several minutes..."):
+        with st.spinner("Triggering internal background task for full ingestion..."):
             try:
-                git_service = GitHubService()
-                llm_service = LLMService()
-                db_store = DocVectorStore()
-                
-                generator = DocGenerator(llm_service, db_store)
-                generator.generate_for_repo(git_service)
-                
-                st.success("✅ Full repository successfully ingested and documented!")
+                res = requests.post(f"{API_BASE}/ingest_repo")
+                if res.status_code == 200:
+                    st.success("✅ Full repository ingestion task has been started in the background! Check server logs for progress.")
+                else:
+                    st.error("❌ Failed to start ingestion task on internal API.")
             except Exception as e:
-                st.error(f"❌ An error occurred during ingestion: {str(e)}")
+                st.error(f"❌ An error occurred connecting to the API: {str(e)}")
