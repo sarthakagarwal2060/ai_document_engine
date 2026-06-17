@@ -1,10 +1,9 @@
-# Use official Python image
 FROM python:3.10-slim
 
 WORKDIR /app
 
-# Install system dependencies (required for ChromaDB and compilation)
-RUN apt-get update && apt-get install -y build-essential curl
+# Install system dependencies (nginx for routing, build-essential for ChromaDB)
+RUN apt-get update && apt-get install -y build-essential curl nginx gettext-base dos2unix
 
 # Install Python dependencies
 COPY requirements.txt .
@@ -13,9 +12,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
-# Expose ports for FastAPI (8000) and Streamlit (8501)
-EXPOSE 8000 8501
+# Copy Nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
 
-# Command to run both services using a shell script or directly via CMD. 
-# For Docker Compose, we override this CMD.
-CMD ["bash"]
+# Make the start script executable and fix line endings
+RUN dos2unix start.sh
+RUN chmod +x start.sh
+
+# Expose default port
+EXPOSE 80
+
+# Start everything via the shell script
+CMD ["./start.sh"]
