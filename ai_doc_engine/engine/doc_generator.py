@@ -11,6 +11,7 @@ class DocGenerator:
     def _process_single_unit(self, unit, path):
         print(f"  🧠 [Thread] Generating docs for {unit.unit_type}: {unit.name}...", flush=True)
         try:
+            import time; time.sleep(4) # Respect Groq free tier 12000 TPM limit
             doc = self.llm.generate_documentation(unit)
             doc_id = f"{path}::{unit.name}"
             self.db.upsert_doc(doc_id=doc_id, text=doc, metadata={
@@ -26,6 +27,7 @@ class DocGenerator:
     def _process_entire_file(self, content, path):
         print(f"⚠️ [Thread] Generating docs for entire file: {path}", flush=True)
         try:
+            import time; time.sleep(4) # Respect Groq free tier 12000 TPM limit
             doc = self.llm.generate_documentation(content)
             self.db.upsert_doc(doc_id=path, text=doc, metadata={"file_path": path, "unit_type": "file"})
             return True
@@ -58,7 +60,8 @@ class DocGenerator:
         print(f"⚡ Queued {len(tasks)} code units. Firing parallel LLM requests...", flush=True)
         
         # Phase 2: Execute LLM calls concurrently
-        with ThreadPoolExecutor(max_workers=2) as executor:
+        import time
+        with ThreadPoolExecutor(max_workers=1) as executor:
             futures = []
             for task_type, payload, path in tasks:
                 if task_type == 'file':

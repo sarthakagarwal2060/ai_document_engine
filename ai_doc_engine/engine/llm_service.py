@@ -66,8 +66,9 @@ class LLMService:
 
     def chat_with_context(self, question, context):
         prompt = f"""
-        Answer the developer's question using ONLY the provided documentation context. 
-        If the answer is not in the context, say "I cannot find this in the documentation." Do not hallucinate.
+        You are a helpful coding assistant. 
+        Answer the developer's question based strictly on the provided documentation context below.
+        If the context does not contain the answer, say "I cannot find this in the documentation."
         
         CONTEXT:
         {context}
