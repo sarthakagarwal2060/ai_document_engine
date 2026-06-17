@@ -173,7 +173,15 @@ elif menu_selection == "💬 Chat with Docs":
             docs, metadatas = db_store.search_with_citations(prompt)
             context = "\n\n".join(docs) if docs else "No relevant documentation found."
             
-        st.info("LLM generation will be connected in Stage 6.")
+        with st.spinner("Generating answer..."):
+            llm_service = LLMService()
+            response = llm_service.chat_with_context(prompt, context)
+            
+        with st.chat_message("assistant"):
+            st.markdown(response)
+            st.info("Citations will be implemented in Stage 7.")
+            
+        st.session_state.messages.append({"role": "assistant", "content": response})
     
 elif menu_selection == "⚙️ Settings":
     st.subheader("Repository Settings")
