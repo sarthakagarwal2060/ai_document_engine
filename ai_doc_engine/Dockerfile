@@ -2,8 +2,8 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Install system dependencies (nginx for routing, build-essential for ChromaDB)
-RUN apt-get update && apt-get install -y build-essential curl nginx gettext-base dos2unix
+# Install system dependencies (build-essential for compiling C extensions if needed)
+RUN apt-get update && apt-get install -y build-essential curl
 
 # Install Python dependencies
 COPY requirements.txt .
@@ -12,15 +12,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
-# Copy Nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
-
-# Make the start script executable and fix line endings
-RUN dos2unix start.sh
-RUN chmod +x start.sh
-
 # Expose default port
-EXPOSE 80
+EXPOSE 8000
 
-# Start everything via the shell script
-CMD ["./start.sh"]
+# Start Uvicorn directly
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
