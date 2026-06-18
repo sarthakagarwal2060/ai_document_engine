@@ -59,11 +59,5 @@ class ChangeDetector:
         return changed_units
         
     def _get_old_doc(self, doc_id: str) -> str:
-        """Retrieves existing documentation from ChromaDB safely."""
-        try:
-            result = self.db.collection.get(ids=[doc_id])
-            if result and result.get('documents') and len(result['documents']) > 0:
-                return result['documents'][0]
-        except Exception:
-            pass
-        return None
+        """Retrieves existing documentation from Pinecone safely."""
+        return self.db.get_doc(doc_id)

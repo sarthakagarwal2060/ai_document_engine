@@ -90,3 +90,13 @@ class DocVectorStore:
             metas.append(match.metadata)
             
         return docs, metas
+
+    def get_doc(self, doc_id):
+        """Fetch a single document by its exact ID."""
+        try:
+            result = self.index.fetch(ids=[doc_id])
+            if result and result.vectors and doc_id in result.vectors:
+                return result.vectors[doc_id].metadata.get("text", "")
+        except Exception:
+            pass
+        return None
