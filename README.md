@@ -8,7 +8,7 @@ An intelligent, decoupled full-stack application that automatically ingests your
 * **⚡ Decoupled Architecture:** A lightweight React frontend powered by a lightning-fast FastAPI Python backend.
 * **🔄 Automated Webhooks:** Listen to GitHub pushes in real-time. The AI automatically analyzes diffs, detects what functions changed, and drafts updated documentation for review.
 * **🔍 Semantic Search:** Uses Pinecone Serverless Vector Database and `sentence-transformers` for instant, context-aware code retrieval.
-* **✅ Human-in-the-Loop Review:** Pending documentation updates are queued in the UI for developers to approve or reject before they are permanently embedded into the vector store.
+* **✅ Human-in-the-Loop Review:** Pending documentation updates are queued in the UI for developers to approve or reject before they are permanently embedded into the vector store
 
 ---
 
