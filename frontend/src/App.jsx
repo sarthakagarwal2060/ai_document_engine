@@ -5,7 +5,7 @@ import { Bell, MessageSquare, Settings as SettingsIcon } from 'lucide-react';
 import PendingUpdates from './components/PendingUpdates';
 import ChatWithDocs from './components/ChatWithDocs';
 import Settings from './components/Settings';
-
+// 
 function App() {
   return (
     <div className="app-container">
