@@ -1,5 +1,5 @@
 # Stage 1: Build the React/Vite application
-FROM node:18-alpine as builder
+FROM node:22-alpine as builder
 
 # Set working directory
 WORKDIR /app
