@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./ai_doc_engine
+      dockerfile: Dockerfile.render
+    container_name: ai_doc_backend
+    ports:
+      - "8000:8000"
+    # Load all API keys and variables from the backend .env file
+    env_file:
+      - ./ai_doc_engine/.env
+    # Optional: If you want to sync your code changes in real-time without rebuilding
+    volumes:
+      - ./ai_doc_engine:/app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Pass the backend's local Docker URL to the Vite builder
+        VITE_API_URL: http://localhost:8000/api
+    container_name: ai_doc_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
