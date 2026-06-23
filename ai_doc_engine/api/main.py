@@ -135,15 +135,20 @@ async def delete_pending_update(index: int):
 
 def process_webhook_commit():
     global db, llm, generator
+    
     if db is None:
         from engine.rag_store import DocVectorStore
-        from engine.llm_service import LLMService
-        from engine.doc_generator import DocGenerator
         db = DocVectorStore()
-        llm_service = LLMService()
-        generator = DocGenerator(llm_service=llm_service, db_store=db)
-    else:
-        llm_service = llm
+        
+    if llm is None:
+        from engine.llm_service import LLMService
+        llm = LLMService()
+        
+    if generator is None:
+        from engine.doc_generator import DocGenerator
+        generator = DocGenerator(llm_service=llm, db_store=db)
+        
+    llm_service = llm
 
     print("🔍 BACKGROUND TASK STARTED: Fetching latest commit...", flush=True)
     changes = git_service.get_latest_commit_diffs()
