@@ -97,7 +97,7 @@ function PendingUpdates() {
             <h3 style={{ fontSize: '1.2rem', color: 'var(--text-primary)' }}>
               📄 {update.filename} ➡️ {update.unit_name}
             </h3>
-            <span className="badge warning">{update.severity}</span>
+            <span className={`badge ${update.severity === 'DELETED' ? 'deleted' : 'warning'}`}>{update.severity}</span>
           </div>
 
           <div style={{ display: 'flex', gap: '2rem', marginBottom: '1.5rem' }}>

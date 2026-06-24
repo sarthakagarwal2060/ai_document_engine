@@ -171,6 +171,18 @@ def process_webhook_commit():
         changed_units = detector.detect_changed_units(changes)
         
         for unit in changed_units:
+            # Deleted files don't need AI classification — just notify the team
+            if unit.unit_name == "[FILE DELETED]":
+                pending_updates.append({
+                    "filename": unit.file_path,
+                    "unit_name": "[FILE DELETED]",
+                    "severity": "DELETED",
+                    "old_doc": unit.old_doc,
+                    "new_doc_draft": f"🗑️ **This file has been deleted from the repository.**\n\nThe file `{unit.file_path}` was removed in the latest commit. Its documentation in the vector database may now be stale.\n\n**Action:** Approve this update to acknowledge the deletion, or reject to keep the old documentation."
+                })
+                print(f"🗑️ Added deletion notice for {unit.file_path} to UI Review Queue.", flush=True)
+                continue
+                
             flag = classifier.classify(unit)
             
             if flag.draft_markdown:

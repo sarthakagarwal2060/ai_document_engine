@@ -19,12 +19,29 @@ class ChangeDetector:
         for diff in diffs:
             filename = diff.get("filename")
             patch = diff.get("patch")
+            status = diff.get("status")
             
             if not patch or not filename:
                 continue
+            
+            # For deleted files, create a special entry so the team can see it in the dashboard
+            if status == "removed":
+                old_doc = self._get_old_doc(filename)
+                changed_units.append(ChangedUnit(
+                    file_path=filename,
+                    unit_name="[FILE DELETED]",
+                    patch=patch,
+                    old_doc=old_doc
+                ))
+                continue
                 
-            # Get the new content of the file
-            content = self.git.get_file_content(filename)
+            # Get the new content of the file (may fail if file was renamed/moved)
+            try:
+                content = self.git.get_file_content(filename)
+            except Exception as e:
+                print(f"⚠️ Skipping {filename}: Could not fetch content ({e})", flush=True)
+                continue
+                
             if not content:
                 continue
                 
