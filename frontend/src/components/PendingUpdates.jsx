@@ -14,6 +14,7 @@ const markdownContainerStyle = {
   overflow: 'auto',
   fontSize: '0.9rem',
   lineHeight: '1.7',
+  whiteSpace: 'pre-wrap', // Preserve line breaks for single newlines
 };
 
 function PendingUpdates() {
