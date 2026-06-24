@@ -1,8 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { CheckCircle, XCircle } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
+
+// Styles for rendered markdown inside the dark cards
+const markdownContainerStyle = {
+  background: 'rgba(0,0,0,0.2)',
+  padding: '1rem',
+  borderRadius: '8px',
+  minHeight: '100px',
+  overflow: 'auto',
+  fontSize: '0.9rem',
+  lineHeight: '1.7',
+};
 
 function PendingUpdates() {
   const [updates, setUpdates] = useState([]);
@@ -91,17 +103,23 @@ function PendingUpdates() {
           <div style={{ display: 'flex', gap: '2rem', marginBottom: '1.5rem' }}>
             <div style={{ flex: 1 }}>
               <h4 style={{ color: 'var(--danger)', marginBottom: '0.5rem' }}>🛑 Old Documentation</h4>
-              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', minHeight: '100px' }}>
-                {update.old_doc || <span style={{color: 'var(--text-secondary)'}}>No previous documentation existed.</span>}
+              <div className="markdown-body" style={markdownContainerStyle}>
+                {update.old_doc ? (
+                  <ReactMarkdown>{update.old_doc}</ReactMarkdown>
+                ) : (
+                  <span style={{color: 'var(--text-secondary)'}}>No previous documentation existed.</span>
+                )}
               </div>
             </div>
             
             <div style={{ flex: 1 }}>
               <h4 style={{ color: 'var(--success)', marginBottom: '0.5rem' }}>✅ AI Drafted Documentation</h4>
-              <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px', minHeight: '100px' }}>
-                <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', margin: 0 }}>
-                  {update.new_doc_draft || "No draft generated."}
-                </pre>
+              <div className="markdown-body" style={markdownContainerStyle}>
+                {update.new_doc_draft ? (
+                  <ReactMarkdown>{update.new_doc_draft}</ReactMarkdown>
+                ) : (
+                  <span style={{color: 'var(--text-secondary)'}}>No draft generated.</span>
+                )}
               </div>
             </div>
           </div>

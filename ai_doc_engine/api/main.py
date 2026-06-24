@@ -34,7 +34,7 @@ UPDATES_FILE = "pending_updates.json"
 
 class SearchQuery(BaseModel):
     query: str
-    n_results: int = 8
+    n_results: int = 6
 
 class ChatQuery(BaseModel):
     prompt: str
