@@ -21,7 +21,7 @@ class LLMService:
         # Initialize a pool of clients
         self.clients = [Groq(api_key=key) for key in keys]
         self.current_client_index = 0
-        self.model = "llama-3.3-70b-versatile" # Updated to actively supported Llama 3
+        self.model = "openai/gpt-oss-120b" # Updated to actively supported Llama 3
 
     def _execute_with_fallback(self, prompt):
         """Attempts the Groq request, falling back to the next API key if it fails."""
