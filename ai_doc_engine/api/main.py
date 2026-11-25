@@ -45,6 +45,10 @@ class UpsertDoc(BaseModel):
     text: str
     metadata: dict
 
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
 @app.post("/api/chat")
 async def api_chat(query: ChatQuery):
     global llm
